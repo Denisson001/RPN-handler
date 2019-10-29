@@ -49,7 +49,7 @@ void TSolver::_solve() {
             error = current_char != 'a' &&
                     current_char != 'b' &&
                     current_char != 'c' &&
-                    current_char != '!';
+                    current_char != '1';
 
             if (!error) {
                 _pushSymbol(current_char);
@@ -63,9 +63,9 @@ void TSolver::_solve() {
 
     if (error) {
         _error();
+    } else {
+        _printResult();
     }
-
-    _printResult();
 }
 
 TSolver::_TState TSolver::_createEmptyState() const {
