@@ -22,7 +22,7 @@ std::string TSolver::_calcResult() {
     int32_t max_prefix_len = -1;
 
     uint32_t word_len = _data->word.size();
-    for (uint32_t len = word_len; len >= 0; len--) {
+    for (int32_t len = word_len; len >= 0; len--) {
         if (_states_stack.top().is_reachable[0][len]) {
             max_prefix_len = len;
             break;
