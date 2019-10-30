@@ -1,23 +1,27 @@
 #include "solver.h"
 
-#include <iostream>
+const std::string TSolver::_ERROR = "ERROR";
+const std::string TSolver::_INF   = "INF";
 
-void TSolver::solve() {
-    _solve();
+TSolver::TSolver():
+    _data(nullptr)
+{}
+
+void TSolver::setData(const TData* data) {
+    _data = data;
 }
 
-void TSolver::_readInput() {
-    std::cin >> _input.expr >> _input.word;
+std::string TSolver::solve() {
+    if (_data == nullptr) {
+        return _ERROR;
+    }
+    return _solve();
 }
 
-void TSolver::_error() const {
-    std::cout << "ERROR";
-}
-
-void TSolver::_printResult() {
+std::string TSolver::_calcResult() {
     int32_t max_prefix_len = -1;
 
-    uint32_t word_len = _input.word.size();
+    uint32_t word_len = _data->word.size();
     for (uint32_t len = word_len; len >= 0; len--) {
         if (_states_stack.top().is_reachable[0][len]) {
             max_prefix_len = len;
@@ -27,18 +31,16 @@ void TSolver::_printResult() {
 
     _states_stack.pop();
     if (max_prefix_len == -1) {
-        std::cout << "INF";
-    } else {
-        std::cout << max_prefix_len;
+        return _INF;    
     }
+    return std::to_string(max_prefix_len);   
 }
 
-void TSolver::_solve() {
-    _readInput();
+std::string TSolver::_solve() {
     bool error = 0;
 
-    for (uint32_t i = 0; i < _input.expr.size() && !error; ++i) {
-        const auto current_char = _input.expr[i];
+    for (uint32_t i = 0; i < _data->expr.size() && !error; ++i) {
+        const auto current_char = _data->expr[i];
         if (current_char == '+') {
             error = !_pushPlus();
         } else if (current_char == '.') {
@@ -62,15 +64,15 @@ void TSolver::_solve() {
     }
 
     if (error) {
-        _error();
-    } else {
-        _printResult();
+        return _ERROR;
     }
+
+    return _calcResult();
 }
 
 TSolver::_TState TSolver::_createEmptyState() const {
     _TState new_state;
-    uint32_t word_len = _input.word.size();
+    uint32_t word_len = _data->word.size();
     new_state.is_reachable.resize(word_len + 1);
     for (uint32_t i = 0; i <= word_len; ++i) {
         new_state.is_reachable[i].resize(word_len + 1, false);
@@ -89,7 +91,7 @@ bool TSolver::_pushPlus() {
     const auto top_state = _states_stack.top();
     _states_stack.pop();
 
-    uint32_t word_len = _input.word.size();
+    uint32_t word_len = _data->word.size();
     for (uint32_t i = 0; i <= word_len; ++i) {
         for (uint32_t j = i; j <= word_len; ++j) { // [i..j)
             if (top_state.is_reachable[i][j]) {
@@ -112,7 +114,7 @@ bool TSolver::_pushDot() {
     _states_stack.pop();
     auto new_state = _createEmptyState();
 
-    uint32_t word_len = _input.word.size();
+    uint32_t word_len = _data->word.size();
     for (uint32_t i = 0; i <= word_len; ++i) {
         for (uint32_t j = i; j <= word_len; ++j) { // [i..j)
             for (uint32_t k = i; k <= j && !new_state.is_reachable[i][j]; ++k) { // [i..k)[k..j)
@@ -136,7 +138,7 @@ bool TSolver::_pushStar() {
     _states_stack.pop();
     auto new_state = _createEmptyState();
 
-    uint32_t word_len = _input.word.size();
+    uint32_t word_len = _data->word.size();
     for (uint32_t i = 0; i <= word_len; ++i) {
         new_state.is_reachable[i][i] = true;
         for (uint32_t j = i + 1; j <= word_len; ++j) { // [i..j)
@@ -155,11 +157,11 @@ bool TSolver::_pushStar() {
 void TSolver::_pushSymbol(char symbol) {
     auto new_state = _createEmptyState();
 
-    uint32_t word_len = _input.word.size();
+    uint32_t word_len = _data->word.size();
     for (uint32_t i = 0; i <= word_len; ++i) {
         if (symbol == '1') {
             new_state.is_reachable[i][i] = true;
-        } else if (i < word_len && _input.word[i] == symbol) {
+        } else if (i < word_len && _data->word[i] == symbol) {
             new_state.is_reachable[i][i + 1] = true;
         }
     }

@@ -1,33 +1,33 @@
 #pragma once
 
+#include "data.h"
+
 #include <string>
 #include <stack>
 #include <vector>
 
 class TSolver {
 public:
-    void solve();
+    TSolver();
+    std::string solve();
+    void        setData(const TData*);
 
 private:
-    struct _TInput {
-        std::string expr;
-        std::string word;
-    };
-
     struct _TState {
         std::vector< std::vector<bool> > is_reachable;
     };
 
-    std::stack<_TState> _states_stack;
-    _TInput             _input;
+    static const std::string _ERROR;
+    static const std::string _INF;
 
-    void    _readInput();
-    void    _printResult();
-    void    _error() const;
-    void    _solve();
-    bool    _pushPlus();
-    bool    _pushDot();
-    bool    _pushStar();
-    void    _pushSymbol(char symbol);
-    _TState _createEmptyState() const;
+    std::stack<_TState> _states_stack;
+    const TData*        _data;
+
+    std::string _calcResult();
+    std::string _solve();
+    _TState     _createEmptyState() const;
+    bool        _pushPlus();
+    bool        _pushDot();
+    bool        _pushStar();
+    void        _pushSymbol(char symbol);
 };
