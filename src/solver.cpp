@@ -1,16 +1,23 @@
 #include "solver.h"
 
-const std::string TSolver::_ERROR = "ERROR";
-const std::string TSolver::_INF   = "INF";
+const std::string    TSolver::_ERROR         = "ERROR";
+const std::string    TSolver::_INF           = "INF";
+const std::set<char> TSolver::_VALID_SYMBOLS = {'a', 'b', 'c', '1'};
 
 TSolver::TSolver():
     _data(nullptr)
 {}
 
+/*
+ * Установить указатель на инпут.
+ * */
 void TSolver::setData(const TData* data) {
     _data = data;
 }
 
+/*
+ * Точка входа в решение.
+ * */
 std::string TSolver::solve() {
     if (_data == nullptr) {
         return _ERROR;
@@ -18,6 +25,10 @@ std::string TSolver::solve() {
     return _solve();
 }
 
+/*
+ * Возвращает максимальную длину префикса, лежащего в языке.
+ * Если никакой префикс не лежит в языке, возвращает INF.
+ * */
 std::string TSolver::_calcResult() {
     int32_t max_prefix_len = -1;
 
@@ -33,9 +44,15 @@ std::string TSolver::_calcResult() {
     if (max_prefix_len == -1) {
         return _INF;    
     }
+
     return std::to_string(max_prefix_len);   
 }
 
+/*
+ * Итеративно обрабатывает рег. выражение в обратной польской нотации.
+ * Размер стека после обработки должен быть равен 1.
+ * Возвращает ERROR или результат вызова _calcResult().
+ * */
 std::string TSolver::_solve() {
     bool error = 0;
 
@@ -48,13 +65,10 @@ std::string TSolver::_solve() {
         } else if (current_char == '*') {
             error = !_pushStar();
         } else { // symbol
-            error = current_char != 'a' &&
-                    current_char != 'b' &&
-                    current_char != 'c' &&
-                    current_char != '1';
-
-            if (!error) {
+            if (_VALID_SYMBOLS.count(current_char)) {
                 _pushSymbol(current_char);
+            } else {
+                error = true;
             }
         }
     }
@@ -70,6 +84,10 @@ std::string TSolver::_solve() {
     return _calcResult();
 }
 
+
+/*
+ * Создает и возвращает матрицу _TState размера (word_len + 1) x (word_len + 1), заполненную false.
+ * */
 TSolver::_TState TSolver::_createEmptyState() const {
     _TState new_state;
     uint32_t word_len = _data->word.size();
@@ -81,7 +99,10 @@ TSolver::_TState TSolver::_createEmptyState() const {
 }
 
 /*
- * inplace merge
+ * Обработка '+' рег. выражения.
+ * Метод делает поэлементное логическое 'или' значений матриц динамического программирования двух верхних элементов стека.
+ * Inplace merge.
+ * Возвращает false, если элементов на стеке меньше 2.
  * */
 bool TSolver::_pushPlus() {
     if (_states_stack.size() < 2) {
@@ -103,6 +124,14 @@ bool TSolver::_pushPlus() {
     return true;
 }
 
+/*
+ * Обработка '.' рег. выражения.
+ * Метод снимает две верхних матрицы со стека.
+ * Новое значение true в позиции i, j <=> существует k, что значения в старых матрицах
+ * на позициях i, k и k, j соответственно были true.
+ * Добавляет новую матрицу на стек.
+ * Возвращает false, если элементов на стеке меньше 2.
+ * */
 bool TSolver::_pushDot() {
     if (_states_stack.size() < 2) {
         return false;
@@ -110,16 +139,17 @@ bool TSolver::_pushDot() {
 
     const auto second_state = _states_stack.top();
     _states_stack.pop();
-    const auto first_state = _states_stack.top();
+    const auto first_state  = _states_stack.top();
     _states_stack.pop();
     auto new_state = _createEmptyState();
 
     uint32_t word_len = _data->word.size();
     for (uint32_t i = 0; i <= word_len; ++i) {
         for (uint32_t j = i; j <= word_len; ++j) { // [i..j)
-            for (uint32_t k = i; k <= j && !new_state.is_reachable[i][j]; ++k) { // [i..k)[k..j)
+            for (uint32_t k = i; k <= j; ++k) { // [i..k)[k..j)
                 if (first_state.is_reachable[i][k] && second_state.is_reachable[k][j]) {
                     new_state.is_reachable[i][j] = true;
+                    break;
                 }
             }
         }
@@ -129,6 +159,16 @@ bool TSolver::_pushDot() {
     return true;
 }
 
+/*
+ * Обработка '*' рег. выражения.
+ * Метод снимает верхнюю матрицу со стека.
+ * Новое значение true в позиции i, j <=> этот интервал [i, j) можно представить в виде последовательности
+ * непересекающихся интервалов, покрывающих интервал [i, j), значения для которых true в матрице с вершины стека.
+ * Значения [i, i) становятся true.
+ * Для пересчета удобно использовать уже посчитанные новые значения.
+ * Добавляет новую матрицу на стек.
+ * Возвращает false, если стек пустой.
+ * */
 bool TSolver::_pushStar() {
     if (_states_stack.size() < 1) {
         return false;
@@ -154,6 +194,12 @@ bool TSolver::_pushStar() {
     return true;
 }
 
+/*
+ * Обработка 'a', 'b', 'c' или '1' рег. выражения.
+ * Если '1', то значения [i, i) проставляет true
+ * Если 'a', 'b' или 'c', то проставляет значения [i, i + 1) true, если соответствующие символы совпадают
+ * Добавляет новую матрицу на стек.
+ * */
 void TSolver::_pushSymbol(char symbol) {
     auto new_state = _createEmptyState();
 
@@ -161,7 +207,7 @@ void TSolver::_pushSymbol(char symbol) {
     for (uint32_t i = 0; i <= word_len; ++i) {
         if (symbol == '1') {
             new_state.is_reachable[i][i] = true;
-        } else if (i < word_len && _data->word[i] == symbol) {
+        } else if (i < word_len && _data->word[i] == symbol) { // symbol = 'a', 'b' or 'c'
             new_state.is_reachable[i][i + 1] = true;
         }
     }

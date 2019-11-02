@@ -3,8 +3,8 @@
 #include <iostream>
 
 /*
- * Чтение инпута
- */
+ * Чтение инпута.
+ * */
 TData readData() {
     TData data;
     std::cin >> data.expr >> data.word;

@@ -7,11 +7,19 @@
 #include <vector>
 #include <string>
 
+/*
+ * Структра конфига тестов.
+ *      dirs - директории с тестами.
+ * tests_cnt - число тестов в директории.
+ * */
 struct TCfg {
     std::vector<std::string> dirs;
     std::vector<uint32_t>    tests_cnt;
 };
 
+/*
+ * Считывает конфиг.
+ * */
 TCfg readCfg() {
     std::ifstream cfg_file("tests.cfg");
     TCfg cfg;
@@ -35,10 +43,17 @@ TCfg readCfg() {
     return cfg;
 }
 
+/*
+ * Создает путь до файл с тестом по директории и номеру теста.
+ * Например "base/01".
+ * */
 std::string createFileName(std::string dir, uint32_t test_num) {
     return dir + "/0" + std::to_string(test_num);
 }
 
+/*
+ * Запускает solver на тесте из test_file.
+ * */
 std::string runTest(const std::string& test_file) {
     std::ifstream file(test_file);
     TData data;
@@ -49,6 +64,9 @@ std::string runTest(const std::string& test_file) {
     return solver.solve();
 }
 
+/*
+ * Возвращает ответ на тест из test_file.
+ * */
 std::string readTestResult(const std::string& test_file) {
     std::ifstream file(test_file);
     std::string result;
@@ -57,9 +75,12 @@ std::string readTestResult(const std::string& test_file) {
     return result;
 }
 
+/*
+ * Запускает solver на всех тестах, описанных в конфиге.
+ * */
 void runTests(const TCfg& cfg) {
     for (uint32_t dir_num = 0; dir_num < cfg.dirs.size(); ++dir_num) {
-        const auto& dir = cfg.dirs[dir_num];       
+        const auto& dir = cfg.dirs[dir_num];
         for (uint32_t test_num = 1; test_num <= cfg.tests_cnt[dir_num]; ++test_num) {
             const auto test_file = createFileName(dir, test_num);
             const auto result = runTest(test_file + ".in");
