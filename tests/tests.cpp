@@ -48,7 +48,12 @@ TCfg readCfg() {
  * Например "base/01".
  * */
 std::string createFileName(std::string dir, uint32_t test_num) {
-    return dir + "/0" + std::to_string(test_num);
+    std::string result = dir + "/";
+    if (test_num < 10) {
+        result += "0";
+    }
+    result += std::to_string(test_num);
+    return result;
 }
 
 /*
